@@ -1,4 +1,4 @@
-import * as Navi from 'navi'
+import { compose, lazy, map, mount, redirect, resolve, route, withContext, withView } from 'navi'
 import React from 'react'
 import { join } from 'path'
 import { chunk, fromPairs } from 'lodash'
@@ -13,19 +13,22 @@ import posts from './posts'
 let chunks = chunk(posts, siteMetadata.indexPageSize)
 let chunkPagePairs = chunks.map((chunk, i) => [
   '/' + (i + 1),
-  async (env: Navi.Env) => {
-    // Get the blog's root pathname, as all index pages other than the first
-    // one are mounted at `/pages/n`
-    let blogPathname = i === 0 ? env.pathname : join(env.pathname, '../..')
+  map(async (req, context) => {
+    // Don't load anything when just crawling
+    if (req.method === 'HEAD') {
+      return route()
+    }
 
     // Get metadata for all pages on this page
-    let postRoutes = await Promise.all<Navi.Route>(
+    let postRoutes = await Promise.all(
       chunk.map(async post => {
-        let href = join(blogPathname, 'posts', post.slug)
-        return await env.router.resolve(href, {
+        let href = join(context.blogRoot, 'posts', post.slug)
+        return await resolve({
           // If you want to show the page content on the index page, set
-          // this to true to be able to access it.
-          withContent: false,
+          // this to 'GET' to be able to access it.
+          method: 'HEAD',
+          routes,
+          url: href,
         })
       }),
     )
@@ -36,73 +39,64 @@ let chunkPagePairs = chunks.map((chunk, i) => [
       pageTitle += ` – page ${i + 1}`
     }
 
-    return Navi.createPage({
+    return route({
       title: pageTitle,
-      getContent: () => (
+      view: (
         <BlogIndexPage
-          blogPathname={blogPathname}
+          blogRoot={context.blogRoot}
           pageNumber={i + 1}
           pageCount={chunks.length}
           postRoutes={postRoutes}
         />
       ),
     })
-  },
+  }),
 ])
 
-const pagesSwitch = Navi.createSwitch({
-  getContent: env => {
+const routes = compose(
+  withContext((req, context) => ({
+    ...context,
+    blogRoot: req.mountpath || '/',
+  })),
+  withView((req, context) => {
     // Check if the current page is an index page by comparing the remaining
     // portion of the URL's pathname with the index page paths.
-    let remainingPathname = env.url.pathname.replace(env.mountname, '')
-    let isViewingIndex =
-      remainingPathname === '/' || /^\/page\/\d+\/$/.test(remainingPathname)
+    let isViewingIndex = req.path === '/' || /^\/page\/\d+\/$/.test(req.path)
 
-    // Wrap the current page's content with a React Context to pass global
-    // configuration to the blog's components.
+    // Render the application-wide layout
     return (
       <BlogLayout
-        blogPathname={env.pathname || '/'}
+        blogRoot={context.blogRoot}
         isViewingIndex={isViewingIndex}
       />
     )
-  },
-
-  paths: {
+  }),
+  mount({
     // The blog's index pages go here. The first index page is mapped to the
     // root URL, with a redirect from "/page/1". Subsequent index pages are
     // mapped to "/page/n".
     '/': chunkPagePairs.shift()[1],
-    '/page': Navi.createSwitch({
-      paths: {
-        '/1': env => Navi.createRedirect(join(env.pathname, '../..')),
-        ...fromPairs(chunkPagePairs),
-      },
+    '/page': mount({
+      '/1': redirect((req, context) => context.blogRoot),
+      ...fromPairs(chunkPagePairs),
     }),
 
     // Put posts under "/posts", so that they can be wrapped with a
     // "<BlogPostLayout />" that configures MDX and adds a post-specific layout.
-    '/posts': Navi.createSwitch({
-      getContent: env => (
-        <BlogPostLayout blogPathname={join(env.pathname, '..')} />
-      ),
-
-      paths: fromPairs(posts.map(post => ['/' + post.slug, post.getPage])),
-    }),
+    '/posts': compose(
+      withView((req, context) => <BlogPostLayout blogRoot={context.blogRoot} />),
+      mount(fromPairs(posts.map(post => ['/' + post.slug, post.getPage]))),
+    ),
 
     // Miscellaneous pages can be added directly to the root switch.
-    '/tags': () => import('./tags'),
-    '/about': () => import('./about'),
+    '/tags': lazy(() => import('./tags')),
+    '/about': lazy(() => import('./about')),
 
     // Only the statically built copy of the RSS feed is intended to be opened,
-    // but the content is fetched here.
-    '/rss': Navi.createPage({
-      getContent: env =>
-        env.router.resolveSiteMap('/posts', {
-          withContent: true,
-        }),
-    }),
-  },
-})
+    // but the route is defined here so that the static renderer will pick it
+    // up.
+    '/rss': route(),
+  }),
+)
 
-export default pagesSwitch
+export default routes

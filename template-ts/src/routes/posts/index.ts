@@ -4,6 +4,10 @@ import { join } from 'path'
 import { sortBy } from 'lodash'
 import slugify from 'slugify'
 
+interface Context {
+  blogRoot: string
+}
+
 // Get a list of all posts, that will not be loaded until the user
 // requests them.
 const postModules = importAll.deferred('./**/post.ts?(x)')
@@ -41,7 +45,7 @@ postDetails = sortBy(postDetails, ['slug']).reverse()
 // Create url-friendly slugs from post pathnames, and a `getPage()` function
 // that can be used to load and return the post's Page object.
 let posts = postDetails.map(({ slug, pathname, date }, i) => ({
-  getPage: async () => {
+  getPage: Navi.map(async () => {
     let { default: post } = await importPost(pathname)
     let { title, getContent, ...meta } = post
     let previousSlug, previousPost, nextSlug, nextPost
@@ -58,28 +62,28 @@ let posts = postDetails.map(({ slug, pathname, date }, i) => ({
       nextSlug = nextPostDetails.slug
     }
 
-    return Navi.createPage({
+    return Navi.route({
       title,
-      getMeta: env => ({
+      getData: (req, context: Context) => ({
         date,
         pathname,
         slug,
         previousDetails: previousPost && {
           title: previousPost.title,
-          href: join(env.pathname, '../..', previousSlug),
+          href: join(context.blogRoot, 'posts', previousSlug),
         },
         nextDetails: nextPost && {
           title: nextPost.title,
-          href: join(env.pathname, '../..', nextSlug),
+          href: join(context.blogRoot, 'posts', nextSlug),
         },
         ...meta,
       }),
-      getContent: async () => {
+      getView: async () => {
         let { default: MDXComponent, ...other } = await getContent()
         return { MDXComponent, ...other }
       },
     })
-  },
+  }),
   slug,
 }))
 

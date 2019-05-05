@@ -1,10 +1,10 @@
 import { join } from 'path'
 import React from 'react'
-import { NavLink } from 'react-navi'
+import { Link } from 'react-navi'
 import { formatDate } from '../utils/formats'
 import styles from './ArticleMeta.module.css'
 
-function ArticleMeta({ blogPathname, meta, readingTime }) {
+function ArticleMeta({ blogRoot, meta, readingTime }) {
   let readingTimeElement
   if (readingTime) {
     let minutes = Math.max(Math.round(readingTime.minutes), 1)
@@ -29,7 +29,7 @@ function ArticleMeta({ blogPathname, meta, readingTime }) {
           <ul className={styles.tags}>
             {meta.tags.map(tag =>
               <li key={tag}>
-                <NavLink href={join(blogPathname, 'tags', tag)}>{tag}</NavLink>
+                <Link href={join(blogRoot, 'tags', tag)}>{tag}</Link>
               </li>
             )}
           </ul>

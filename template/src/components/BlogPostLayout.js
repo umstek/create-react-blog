@@ -1,31 +1,33 @@
 import React from 'react'
-import { NavContent, NavLink } from 'react-navi'
+import { View, Link, useCurrentRoute } from 'react-navi'
 import { MDXProvider } from '@mdx-js/tag'
 import siteMetadata from '../siteMetadata'
 import ArticleMeta from './ArticleMeta'
 import Bio from './Bio'
 import styles from './BlogPostLayout.module.css'
 
-function BlogPostLayout({ blogPathname }) {
+function BlogPostLayout({ blogRoot }) {
+  let { title, data, url } = useCurrentRoute()
+
   return (
-    <NavContent>
-      {({ MDXComponent, readingTime }, { title, meta, url }) =>
+    <View>
+      {({ MDXComponent, readingTime }) =>
         // The content for posts is an MDX component, so we'll need
         // to use <MDXProvider> to ensure that links are rendered
-        // with <NavLink>, and thus use pushState.
+        // with <Link>, and thus use pushState.
         <article className={styles.container}>
           <header className={styles.header}>
             <h1 className={styles.title}>
-              <NavLink href={url.pathname}>{title}</NavLink>
+              <Link href={url.pathname}>{title}</Link>
             </h1>
             <ArticleMeta
-              blogPathname={blogPathname}
-              meta={meta}
+              blogRoot={blogRoot}
+              meta={data}
               readingTime={readingTime}
             />
           </header>
           <MDXProvider components={{
-            a: NavLink,
+            a: Link,
             wrapper: ({ children }) =>
               <div className={styles.content}>
                 {children}
@@ -35,29 +37,29 @@ function BlogPostLayout({ blogPathname }) {
           </MDXProvider>
           <footer className={styles.footer}>
             <h3 className={styles.title}>
-              <NavLink href={blogPathname}>
+              <Link href={blogRoot}>
                 {siteMetadata.title}
-              </NavLink>
+              </Link>
             </h3>
             <Bio className={styles.bio} />
             <section className={styles.links}>
               {
-                meta.previousDetails &&
-                <NavLink className={styles.previous} href={meta.previousDetails.href}>
-                  ← {meta.previousDetails.title}
-                </NavLink>
+                data.previousDetails &&
+                <Link className={styles.previous} href={data.previousDetails.href}>
+                  ← {data.previousDetails.title}
+                </Link>
               }
               {
-                meta.nextDetails &&
-                <NavLink className={styles.next} href={meta.nextDetails.href}>
-                  {meta.nextDetails.title} →
-                </NavLink>
+                data.nextDetails &&
+                <Link className={styles.next} href={data.nextDetails.href}>
+                  {data.nextDetails.title} →
+                </Link>
               }
             </section>
           </footer>
         </article>
       }
-    </NavContent>
+    </View>
   )
 }
 

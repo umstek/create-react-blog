@@ -1,9 +1,9 @@
 import React from 'react'
 import {
   NavContent,
-  NavLink,
+  Link,
   NavLoading,
-  NavNotFoundBoundary,
+  NotFoundBoundary,
 } from 'react-navi'
 import siteMetadata from '../siteMetadata'
 import NotFoundPage from './NotFoundPage'
@@ -11,11 +11,11 @@ import LoadingIndicator from './LoadingIndicator'
 import styles from './BlogLayout.module.css'
 
 interface BlogLayoutProps {
-  blogPathname: string
+  blogRoot: string
   isViewingIndex: boolean
 }
 
-function BlogLayout({ blogPathname, isViewingIndex }: BlogLayoutProps) {
+function BlogLayout({ blogRoot, isViewingIndex }: BlogLayoutProps) {
   return (
     // Once hooks are released, `<NavLoading>` will be able to be replaced
     // with the new `useLoadingRoute` hooks.
@@ -29,15 +29,15 @@ function BlogLayout({ blogPathname, isViewingIndex }: BlogLayoutProps) {
           !isViewingIndex && (
             <header>
               <h3 className={styles.title}>
-                <NavLink href={blogPathname}>{siteMetadata.title}</NavLink>
+                <Link href={blogRoot}>{siteMetadata.title}</Link>
               </h3>
             </header>
           )}
 
           <main>
-            <NavNotFoundBoundary render={() => <NotFoundPage />}>
+            <NotFoundBoundary render={() => <NotFoundPage />}>
               <NavContent />
-            </NavNotFoundBoundary>
+            </NotFoundBoundary>
           </main>
         </div>
       )}

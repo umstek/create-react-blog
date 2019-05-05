@@ -1,6 +1,6 @@
 import { Route } from 'navi'
 import React from 'react'
-import { NavLink } from 'react-navi'
+import { Link } from 'react-navi'
 import siteMetadata from '../siteMetadata'
 import ArticleSummary from './ArticleSummary'
 import Bio from './Bio'
@@ -8,14 +8,14 @@ import Pagination from './Pagination'
 import styles from './BlogIndexPage.module.css'
 
 interface BlogIndexPageProps {
-  blogPathname: string
+  blogRoot: string
   pageCount: number
   pageNumber: number
   postRoutes: Route[]
 }
 
 function BlogIndexPage({
-  blogPathname,
+  blogRoot: blogRoot,
   pageCount,
   pageNumber,
   postRoutes,
@@ -24,20 +24,20 @@ function BlogIndexPage({
     <div>
       <header>
         <h1 className={styles.title}>
-          <NavLink href={blogPathname}>{siteMetadata.title}</NavLink>
+          <Link href={blogRoot}>{siteMetadata.title}</Link>
         </h1>
         <Bio />
       </header>
       <ul className={styles.articlesList}>
         {postRoutes.map(route => (
           <li key={route.url.href}>
-            <ArticleSummary blogPathname={blogPathname} route={route} />
+            <ArticleSummary blogRoot={blogRoot} route={route} />
           </li>
         ))}
       </ul>
       {pageCount > 1 && (
         <Pagination
-          blogPathname={blogPathname}
+          blogRoot={blogRoot}
           pageCount={pageCount}
           pageNumber={pageNumber}
         />
@@ -47,8 +47,8 @@ function BlogIndexPage({
           <a href="./rss.xml" target="_blank" style={{ float: 'right' }}>
             RSS
           </a>
-          <NavLink href="./about">About</NavLink> &bull;{' '}
-          <NavLink href="./tags">Tags</NavLink> &bull;{' '}
+          <Link href="./about">About</Link> &bull;{' '}
+          <Link href="./tags">Tags</Link> &bull;{' '}
           <a href="https://github.com/frontarm/create-react-blog">
             Source
           </a>
